@@ -38,6 +38,7 @@
                         </div>
 
                         <form class="form-signin">
+                            {% include 'licenses.html' %}
                             <button
                                     class="btn btn-lg btn-primary btn-block text-uppercase"
                                     type="button"
@@ -241,32 +242,6 @@
   var oauthToken;
   var fileStagingTable;
 
-function TDate() {
-var UserDate = document.getElementById("datecreated").value;
-var ToDate = new Date();
-
-  function TDate() 
-  {
-    var dc = document.getElementById("DateCreated").value;
-    var Today = new Date();
-    var dd = Today.getDate(); 
-    var mm = Today.getMonth() + 1; //January is 0! 
-    var yyyy = Today.getFullYear(); 
-    if (dd < 10) 
-      { dd = '0' + dd; } 
-    if (mm < 10) 
-      { mm = '0' + mm; }
-    var dmy = yyyy+'-'+mm+'-'+dd;
-    if (new Date(dc).getTime() > Today.getTime()) 
-    {
-
-      alert("The Date created must be Less than or Equal to today's date");
-      //return document.getElementById("datecreated").value = null;
-      return DateCreated.value = dmy;
-    }
-    return true
-  }
-  
   // Use the Google API Loader script to load the google.picker script.
   function onGoogleUploadButtonClick() {
     gapi.load("auth", { callback: onAuthApiLoad });
@@ -297,8 +272,9 @@ var ToDate = new Date();
   // Create and render a Picker object for searching images.
   function createPicker() {
     if (pickerApiLoaded && oauthToken) {
-      var view = new google.picker.View(google.picker.ViewId.DOCS);
-      view.setMimeTypes("image/png,image/jpeg,image/jpg");
+      var view = new google.picker.DocsView().setIncludeFolders(true);
+      view.setMimeTypes("image/jpeg,image/jpg,image/gif,image/png,image/bmp");
+      view.setParent('root');
       var picker = new google.picker.PickerBuilder()
         .enableFeature(google.picker.Feature.NAV_HIDDEN)
         .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
@@ -351,14 +327,6 @@ var ToDate = new Date();
             validator: "unique"
           },
           {
-            title: "Date work was created or first published",
-            field: "datecreated",
-            width: 350,
-            formatter: function(cell, formatterParams, onRendered) {
-              return `{% include 'datepicker.html' %}`;
-            } 
-          },  
-          {
             title: "Description",
             field: "description",
             editor: "textarea",
@@ -381,17 +349,16 @@ var ToDate = new Date();
 
   function uploadFiles() {
     // Disable the button first.
-    $("#upload-button").toggleClass("disabled");
+    $("#upload-button").prop("disabled", true);
+    $("#upload-button i")
+      .removeClass("fa-caret-right")
+      .addClass("fa-spinner fa-spin");
     var fileData = {
       fileList: fileStagingTable.getData(),
-      token: oauthToken
+      token: oauthToken,
+      license: $("#wpLicense").val()
     };
 
-    for (var x = 0; x < fileData["fileList"].length; x++) {
-      var sel = document.getElementById(`DateCreated`);
-      fileData["fileList"][x]["DateCreated"] = sel.value;
-    }   
-    
     function getCookie(name) {
       var cookieValue = null;
       if (document.cookie && document.cookie !== "") {
@@ -415,6 +382,13 @@ var ToDate = new Date();
       return /^(GET|HEAD|OPTIONS|TRACE)$/.test(method);
     }
 
+    function enableUploadButton() {
+      $("#upload-button").prop("disabled", false);
+      $("#upload-button i")
+        .removeClass("fa-spinner fa-spin")
+        .addClass("fa-caret-right");
+    }
+
     $.ajax({
       // prettier-ignore
       url: "{{ request.scheme }}://{{ request.META.HTTP_HOST }}{% url 'file_upload' %}",
@@ -433,6 +407,7 @@ var ToDate = new Date();
         $(".step-1-2").hide();
         $(".step-4").show();
         $(".results-panel").append("<tbody>");
+        enableUploadButton();
         data.forEach(function(item) {
           $(".results-panel").append(
             `<tr><td><img src='${item.url}' style='width: 50px'></td><td>${item.canonicaltitle}</td><td><a href='${item.url}' target='_blank'>${item.url}</a></td></tr>`
@@ -442,6 +417,7 @@ var ToDate = new Date();
       },
       error: function() {
         console.log("error");
+        enableUploadButton();
       }
     });
   }
